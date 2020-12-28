@@ -5,7 +5,13 @@ import albumentations as albu
 
 class DATAGENERATOR(D.Dataset):
     def __init__(self,filenames, augmentation, preprocessing, train_val_test_mode):
-        """train_val_mode: True=Training; False=Validation
+        """Generates the Input for the NN.
+            filenames: train,val: shape(N,2) = [train_array,label_array]
+                        test: shape(N) = test_array
+                        *_array: Array of all filenames
+            augmentation: function with augmentation
+            preprocessing: function with preprocessing
+            train_val_test_mode: "train"=training batch, "val"=Validation batch, "test"= Testbatch
         """
         self.train_val_test_mode = train_val_test_mode
         self.filenames = filenames
@@ -44,12 +50,27 @@ def get_training_augmentation():
 
         """
     augmentation = [
-        albu.HorizontalFlip(p=0.5),
-        albu.VerticalFlip(p=0.5),
-        albu.RandomRotate90(p=0.5),
-        albu.IAAAdditiveGaussianNoise(p=0.2),
+        albu.HorizontalFlip(p=0.5),             #50% of horizontal Flip
+        albu.VerticalFlip(p=0.5),               #50% of vertical Flip
+        albu.RandomRotate90(p=0.5),             #50% of Roation of +-90°
+        albu.IAAAdditiveGaussianNoise(p=0.2),   #Implement 20% Noise
         albu.IAAPerspective(p=0.5)
+        albu.OneOf([                            #Use Just one Augmentation of:
+            albu.RandomContrast(),
+            albu.RandomGamma(),
+            albu.RandomBrightness(),
+            al.ColorJitter(brightness=0.07,
+                           contrast=0.07,
+                            saturation=0.1,
+                           hue=0.1,
+                           always_apply=False,p=0.3)],p=0.3)
+        albu.OneOf([
+            A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+            A.GridDistortion(),
+            A.OpticalDistortion(distort_limit=2, shift_limit=0.5)], p=0.0),
+        albu.ShiftScaleRotate(),
     ]
+
     return albu.Compose(augmentation)
 
 def get_preprocessing():
