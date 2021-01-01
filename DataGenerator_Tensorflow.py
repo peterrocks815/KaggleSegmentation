@@ -1,9 +1,9 @@
-import torch.utils.data as D
+from tensorflow.keras.utils import Sequence
 import cv2
 import numpy as np
 import albumentations as albu
 
-class DATAGENERATOR(D.Dataset):
+class DATAGENERATOR(Sequence):
     def __init__(self,filenames, augmentation, preprocessing, train_val_test_mode):
         """Generates the Input for the NN.
             filenames: train,val: shape(N,2) = [train_array,label_array]
@@ -31,19 +31,16 @@ class DATAGENERATOR(D.Dataset):
             if self.augmentation:
                 sample = self.augmentation(image=img, mask=mask)
                 img,mask = sample["image"], sample["mask"]
-                print(img, mask)
             if self.preprocessing:
                 sample = self.preprocessing(image=img, mask=mask)
                 img,mask = sample["image"], sample["mask"]
-                print(img,mask)
-            return img,mask
+            return np.array([img], dtype = np.float32),np.array([mask], dtype=np.float32)
         if self.train_val_test_mode == "val":
             img = self.func_read_filename(self.filenames[i][0])
             mask = cv2.imread(self.filenames[i][1], 0)
-            mask = np.expand_dims(mask, axis=2)
-            return img,mask
+            return np.array([img], dtype = np.float32),np.array([mask], dtype=np.float32)
         img = self.func_read_filename(self.filenames[i])
-        return img
+        return np.array([img], dtype = np.float32)
 
 def get_training_augmentation():
     """
@@ -61,15 +58,15 @@ def get_training_augmentation():
             albu.RandomContrast(),
             albu.RandomGamma(),
             albu.RandomBrightness(),
-            albu.ColorJitter(brightness=0.07,
+            al.ColorJitter(brightness=0.07,
                            contrast=0.07,
                             saturation=0.1,
                            hue=0.1,
                            always_apply=False,p=0.3)],p=0.3),
         albu.OneOf([
-            albu.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
-            albu.GridDistortion(),
-            albu.OpticalDistortion(distort_limit=2, shift_limit=0.5)], p=0.0),
+            A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+            A.GridDistortion(),
+            A.OpticalDistortion(distort_limit=2, shift_limit=0.5)], p=0.0),
         albu.ShiftScaleRotate(),
     ]
 
@@ -82,4 +79,3 @@ def get_preprocessing():
                        max_pixel_value=255.0, always_apply=True, p=1.0),
     ]
     return albu.Compose(process)
-

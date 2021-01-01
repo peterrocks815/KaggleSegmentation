@@ -1,6 +1,22 @@
 from efficientnet.keras import EfficientNetB7 as EfficientNet
 from keras.layers import Conv2D,BatchNormalization,LeakyReLU,MaxPooling2D,Dropout,concatenate,Add,Conv2DTranspose
 from keras.models import Model
+import tensorflow as tf
+#from tensorflow.keras import Model
+
+
+def dice_loss(onehots_true, logits):
+    probabilities = tf.nn.softmax(logits)
+    #weights = 1.0 / ((tf.reduce_sum(onehots_true, axis=0)**2) + 1e-3)
+    #weights = tf.clip_by_value(weights, 1e-17, 1.0 - 1e-7)
+    numerator = tf.reduce_sum(onehots_true * probabilities, axis=0)
+    #numerator = tf.reduce_sum(weights * numerator)
+    denominator = tf.reduce_sum(onehots_true + probabilities, axis=0)
+    #denominator = tf.reduce_sum(weights * denominator)
+    loss = 1.0 - 2.0 * (numerator + 1) / (denominator + 1)
+    return loss
+
+
 
 def convolution_block(x, filters, size, strides=(1,1), padding='same', activation=True):
     x = Conv2D(filters, size, strides=strides, padding=padding)(x)
@@ -69,19 +85,6 @@ def UEfficientNet(input_shape=(None, None, 3), dropout_rate=0.1):
 
     deconv1 = Conv2DTranspose(32, (3, 3), strides=(2, 2), padding="same")(uconv2)
     conv1 = backbone.layers[28].output
-    print("26", backbone.layers[26].output)
-    print("27", backbone.layers[27].output)
-    print("28", backbone.layers[28].output)
-    print("29", backbone.layers[29].output)
-    print("30", backbone.layers[30].output)
-    print("31", backbone.layers[31].output)
-    print("32", backbone.layers[32].output)
-    print("33", backbone.layers[33].output)
-    print("34", backbone.layers[34].output)
-    print("35", backbone.layers[35].output)
-    print("36", backbone.layers[36].output)
-    print("37", backbone.layers[37].output)
-    print("las", deconv1)
     uconv1 = concatenate([deconv1, conv1])
 
     uconv1 = Dropout(0.1)(uconv1)
@@ -101,9 +104,9 @@ def UEfficientNet(input_shape=(None, None, 3), dropout_rate=0.1):
     output_layer = Conv2D(1, (1, 1), padding="same", activation="sigmoid")(uconv0)
 
     model = Model(input, output_layer)
-    model.name = 'u-xception'
+    #model.name = 'u-xception'
 
     return model
 
 model = UEfficientNet(input_shape=(256, 256, 3), dropout_rate=0.1)
-model.summary()
+#model.summary()

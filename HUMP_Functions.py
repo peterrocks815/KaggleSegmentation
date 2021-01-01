@@ -8,7 +8,10 @@ import numpy as np
 import urllib3
 import base64
 import pandas as pd
+import cv2
+from sklearn.model_selection import train_test_split
 
+######################GET IMAGES
 def take_BIGIMG_and_save_RandomSmallImg_and_Mask(number_of_cuts=10,x_size=256,y_size=256, path=""):
     """Takes the big images and saves small images randomly cut out of the bit img.
         Number_of_cuts: tells how many small images will saved,
@@ -37,22 +40,16 @@ def take_BIGIMG_and_save_RandomSmallImg_and_Mask(number_of_cuts=10,x_size=256,y_
             CUT_MASK = Image.fromarray(MASK[m:o,n:p])
             CUT_IMG.save(CUT_PATH_IMG,"png")
             CUT_MASK.save(CUT_PATH_MASK,"png")
+def get_filenames_of_TrainValData(path):
+    """Takes the Path where all the Data is stored.
+    Goes into the created TrainingFile: "CutTrain", load all files and returns the pathnames
+    splited into train_img,train_mask, val_img, val_mask """
 
-
-
-
-
-
-
-def get_filenames_of_testImg(path):
+    train_data = sorted(glob.glob(os.path.join(path + "/CutTrain/*_img.png")))
+    mask_data = sorted(glob.glob(os.path.join(path+"/CutTrain/*_mask.png")))
+    return train_test_split(train_data,mask_data, test_size=0.33, random_state=42)
+def get_filenames_of_TestData(path):
     return glob.glob(os.path.join(path,"*.tiff"))
-def showImage_List_path(path):
-    fig = plt.figure()
-    for i in range(1,len(path)+1):
-        img = Image.open(path[i])
-        fig.add_subplot(1,len(path),i)
-        plt.imshow(img)
-    plt.show()
 def mask2rle(img):
     '''
     img: numpy array, 1 - mask, 0 - background
@@ -78,3 +75,11 @@ def rle2mask(mask_rle, shape):
     for lo, hi in zip(starts, ends):
         img[lo:hi] = 1
     return img.reshape(shape).T
+def gridCut_of_BigImg(img,x_size,y_size):
+    X_size,Y_size = img.shape
+    images = []
+    for x in range(X_size/x_size):
+        for y in range(Y_size/y_size):
+            images.append(img[x:x+x_size,y:y+y_size])
+    return images
+
